@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}ADMIN{% endblock %}
+{% block wrapclass %}narrow{% endblock %}
+{% block body %}
+<div class="hero"><h1>MARSHAL</h1><div class="sub">control room</div></div>
+<div class="panel">
+  <form method="post" action="{{ url_for('admin') }}">
+    <label>ADMIN PASSWORD</label>
+    <input type="password" name="password" required autofocus>
+    <button class="btn" type="submit" style="margin-top:14px">ENTER</button>
+    {% if err %}<div class="flash err show">{{ err }}</div>{% endif %}
+  </form>
+</div>
+{% endblock %}

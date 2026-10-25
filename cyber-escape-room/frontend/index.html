@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CYBER ESCAPE ROOM // ENTRY</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head><body>
+<div class="scan"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">CYBER<b>_</b>ESCAPE<b>_</b>ROOM</div>
+    <div class="nav"><a href="/leaderboard">Leaderboard</a><a href="/admin">Control</a></div>
+  </div>
+
+  <div class="panel">
+    <h1 style="color:var(--red)">// THE SYSTEM IS LOCKED</h1>
+    <p class="muted">Seven stages stand between you and the exit. Steganography. Ciphers. A vault that
+    trusts the wrong people. Two of the words are not on any screen... you will have to get up and walk.</p>
+    <p class="muted small">You have <b style="color:var(--red)">2 hours</b> once you hit START.
+    Google is allowed. AI is allowed. The chain is not. Every flag looks like
+    <b class="mono">CYBER_ESCAPE_ROOM{…}</b>. Find them in order. Assemble the master key. Escape.</p>
+  </div>
+
+  <div class="row">
+    <div class="panel">
+      <h2>// New Entry</h2>
+      <label>Display handle (you)</label>
+      <input id="r_handle" placeholder="ghost_in_the_shell" maxlength="24">
+      <label>Entry type</label>
+      <select id="r_mode">
+        <option value="single">SINGLE // solo operative</option>
+        <option value="team">TEAM // get a code to share</option>
+      </select>
+      <label id="r_namelbl">Callsign (team or solo name, unique)</label>
+      <input id="r_name" placeholder="null_syndicate" maxlength="40">
+      <div style="margin-top:14px"><button class="btn" id="r_btn">REGISTER</button></div>
+      <div id="r_msg"></div>
+    </div>
+
+    <div class="panel">
+      <h2>// Join a Team</h2>
+      <p class="muted small">Your captain registered a TEAM and got a 6-character code. Enter it here to land in the same squad.</p>
+      <label>Team code</label>
+      <input id="j_code" placeholder="A1B2C3" maxlength="6" style="text-transform:uppercase">
+      <label>Your handle</label>
+      <input id="j_handle" placeholder="wraith" maxlength="24">
+      <div style="margin-top:14px"><button class="btn ghost" id="j_btn">JOIN</button></div>
+      <div id="j_msg"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function show(el,txt,cls){el.innerHTML=`<div class="msg ${cls}">${txt}</div>`;}
+async function post(url,data){
+  const fd=new FormData();for(const k in data)fd.append(k,data[k]);
+  const r=await fetch(url,{method:'POST',body:fd});
+  let j={};try{j=await r.json();}catch(e){}
+  return {ok:r.ok,status:r.status,j};
+}
+$('r_mode').onchange=e=>{
+  $('r_namelbl').textContent = e.target.value==='team'
+    ? 'Team name (unique)' : 'Solo callsign (unique)';
+};
+$('r_btn').onclick=async()=>{
+  const name=$('r_name').value.trim(), handle=$('r_handle').value.trim(), mode=$('r_mode').value;
+  if(!name||!handle){return show($('r_msg'),'Handle and name required.','err');}
+  $('r_btn').disabled=true;
+  const {ok,j}=await post('/api/register',{name,handle,mode});
+  $('r_btn').disabled=false;
+  if(!ok){return show($('r_msg'),j.detail||'Registration failed.','err');}
+  if(mode==='team'){
+    show($('r_msg'),`Registered. <b>Share this code with your team:</b>
+      <div class="bigcode" style="margin-top:10px">${j.code}</div>
+      Redirecting to your dashboard...`,'ok');
+  }else{
+    show($('r_msg'),'Registered. Entering...','ok');
+  }
+  setTimeout(()=>location.href='/dashboard',mode==='team'?2600:900);
+};
+$('j_btn').onclick=async()=>{
+  const code=$('j_code').value.trim().toUpperCase(), handle=$('j_handle').value.trim();
+  if(!code||!handle){return show($('j_msg'),'Code and handle required.','err');}
+  $('j_btn').disabled=true;
+  const {ok,j}=await post('/api/join',{code,handle});
+  $('j_btn').disabled=false;
+  if(!ok){return show($('j_msg'),j.detail||'Join failed.','err');}
+  show($('j_msg'),`Joined <b>${j.team}</b>. Entering...`,'ok');
+  setTimeout(()=>location.href='/dashboard',900);
+};
+</script>
+</body></html>

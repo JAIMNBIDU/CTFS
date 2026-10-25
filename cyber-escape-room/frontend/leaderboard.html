@@ -1,0 +1,59 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CYBER ESCAPE ROOM // LEADERBOARD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head><body>
+<div class="scan"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">CYBER<b>_</b>ESCAPE<b>_</b>ROOM</div>
+    <div class="nav"><a href="/dashboard">Terminal</a><a href="/">Entry</a></div>
+  </div>
+  <div class="panel">
+    <div class="row" style="align-items:center">
+      <h1 style="color:var(--red);margin:0">// LIVE LEADERBOARD</h1>
+      <div style="text-align:right" class="muted small">auto-refresh 3s · <span id="upd">--</span></div>
+    </div>
+    <div class="steps" style="margin-top:14px"><div class="step done"></div><div class="step done"></div><div class="step cur"></div><div class="step"></div></div>
+    <table>
+      <thead><tr><th>#</th><th>Callsign</th><th>Mode</th><th>Progress</th><th>Stages</th><th>State</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="muted center" style="padding:30px;display:none">No operatives registered yet.</div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function bar(solved,total,escaped){
+  let h='<div class="steps" style="margin:0">';
+  for(let i=1;i<=total;i++)h+=`<div class="step ${i<=solved?'done':''}" style="height:8px"></div>`;
+  h+='</div>';return h;
+}
+async function load(){
+  const r=await fetch('/api/leaderboard');const d=await r.json();
+  $('upd').textContent=new Date(d.updated*1000).toLocaleTimeString();
+  const rows=d.teams;
+  $('empty').style.display=rows.length?'none':'block';
+  let h='';
+  for(const t of rows){
+    const cls=t.escaped?'escaped':(t.frozen?'frozen':'');
+    const state=t.escaped?'<span class="tag ok">ESCAPED</span>'
+      :t.frozen?'<span class="tag red">FROZEN</span>'
+      :!t.started?'<span class="tag warn">READY</span>'
+      :'<span class="tag">IN PLAY</span>';
+    h+=`<tr class="${cls}">
+      <td class="rank">${t.rank}</td>
+      <td style="font-weight:700">${esc(t.name)}</td>
+      <td class="muted">${t.mode}</td>
+      <td style="min-width:140px">${bar(t.solved,t.total,t.escaped)}</td>
+      <td>${t.solved} / ${t.total}</td>
+      <td>${state}</td></tr>`;
+  }
+  $('rows').innerHTML=h;
+}
+function esc(s){return (s+'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+load();setInterval(load,3000);
+</script>
+</body></html>

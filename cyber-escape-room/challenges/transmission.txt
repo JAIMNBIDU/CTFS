@@ -1,0 +1,6 @@
+>> INTERCEPTED TRANSMISSION // DEAD DROP
+>> outer layer: an encoding. inner layer: a cipher. key is yours already.
+
+V0ZOTSBWWVNZRV9LTENSSlJfWEhPRHt1eWN0eWp9IDo6IEhSRE0gdHl5IGFr
+cXQgbmllaiBlaW15ZiB1ZyB0eXkgRlpURlcgTEJVRiBERklFLCB4eGF1IHNi
+YWsgY2ZpZWpibnJucnkgaGZ3IG51ayB6cnp4IHZ0IGhydXll

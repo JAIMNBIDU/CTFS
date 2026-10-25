@@ -1,0 +1,51 @@
+# ============================================================
+#  CAPTURE THE PEAK  -  EVENT SETTINGS  (SHIPPED)
+# ============================================================
+#  Operational knobs for the host (you). Everything here can
+#  also be overridden by an environment variable at run time
+#  (shown in [brackets]) so you don't have to rebuild the image.
+# ============================================================
+
+# ---- clock (global hard stop) ------------------------------
+# One deadline for EVERYONE. The board locks for all teams at this instant.
+# Set it at run time: -e PEAK_END='2026-10-24T16:00:00+05:30'  (ISO 8601 + tz).
+# Empty => no time lock (dev only; marshals can still FREEZE).
+end_time: ""              # [PEAK_END]  or PEAK_END_EPOCH (unix seconds)
+
+# ---- anti-cheat thresholds ---------------------------------
+fast_solve_secs: 180      # [PEAK_FAST_SECS] solve quicker than this (camp-open -> flag) = flagged
+burst_window_secs: 180    # [PEAK_BURST_SECS] window for a burst of solves
+burst_count: 3            # [PEAK_BURST_N] this many solves inside the window = flagged
+
+# ---- mode --------------------------------------------------
+# "board"  = category board, all stages open, any order
+# "linear" = stage N unlocks only after N-1 is solved
+# This is the ONE switch that makes the two separate deployables.
+mode: "board"             # [PEAK_MODE]
+
+# ---- scoring -----------------------------------------------
+# Points per stage by number of hints taken on it.
+score_ladder: [100, 80, 65, 50]   # 0,1,2,3 hints
+# Tiebreak on equal score: earliest time of last solve wins.
+
+# ---- leaderboard -------------------------------------------
+leaderboard_public: true  # [PEAK_LB_PUBLIC] teams can see rankings
+leaderboard_hide_scores_last_hour: false  # optional "frozen board" drama
+
+# ---- admin -------------------------------------------------
+admin_password: "change_me_peak_admin"   # [PEAK_ADMIN_PASS] /admin login
+
+# ---- registration ------------------------------------------
+registration_open: true   # [PEAK_REG_OPEN] set false to lock new teams
+max_team_size_note: "Solo or group. One shared login per team."
+
+# ---- Stage 3 (self-hosted build: self-contained, no out-of-band) ----
+# At the live event this was out-of-band (message a marshal on WhatsApp).
+# For self-hosting it's converted: the Camp 3 flag is base64-wrapped in the
+# photo's EXIF metadata, so it solves with exiftool + base64 and no human.
+# Leave `enabled: false`. The fields below are vestigial.
+oob:
+  enabled: false                 # self-hosted build: Camp 3 is self-contained (flag in EXIF), no marshal
+  stage: 3
+  number: ""                     # unused in the self-hosted build
+  keyword: "PEAK-MARKER-ALPHA"   # unused in the self-hosted build

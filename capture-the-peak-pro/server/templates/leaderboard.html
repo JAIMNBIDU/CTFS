@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}LEADERBOARD{% endblock %}
+{% block body %}
+<div class="row" style="justify-content:space-between">
+  <div><div class="kicker">STANDINGS</div><h1>LEADER<span class="mark">BOARD</span></h1></div>
+  {% if team %}<a href="{{ url_for('play') }}" class="btn ghost">BACK TO CLIMB</a>
+  {% else %}<a href="{{ url_for('landing') }}" class="btn ghost">ENTER</a>{% endif %}
+</div>
+
+{% if not lb %}
+  <div class="panel"><p class="muted">No teams on the mountain yet.</p></div>
+{% else %}
+<table>
+  <thead><tr>
+    <th class="r">#</th><th>TEAM</th><th class="r">SCORE</th>
+    <th class="r">CAMPS</th><th class="r">LAST SOLVE</th>
+  </tr></thead>
+  <tbody>
+  {% for r in lb %}
+    <tr>
+      <td class="r rank {% if r.rank<=3 %}top{% endif %}">{{ r.rank }}</td>
+      <td>{{ r.name }} {% if r.is_solo %}<span class="badge solo">SOLO</span>{% endif %}</td>
+      <td class="r"><span class="score-n">{{ r.score }}</span></td>
+      <td class="r">{{ r.solves }} / {{ N_STAGES }}</td>
+      <td class="r tiny">{% if r.last_epoch %}{{ ((now - r.last_epoch)/60)|int }}m ago{% else %}&mdash;{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="tiny">Ties break on who reached their score first. Refresh to update.</p>
+{% endif %}
+{% endblock %}
+{% block script %}<script>startClock(['clk']);setTimeout(()=>location.reload(),30000);</script>{% endblock %}

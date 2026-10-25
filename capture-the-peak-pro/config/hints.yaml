@@ -1,0 +1,25 @@
+# ============================================================
+#  CAPTURE THE PEAK :: PRO TIER  -  HINTS (shipped, time-gated)
+#  {LAB} = the pro relay base URL (e.g. http://<host>:9100).
+# ============================================================
+hints:
+  1:
+    - "The door at {LAB}/pro/unseal tells you only 'valid' or 'bad padding' for any ciphertext you send. The sealed note is at {LAB}/pro/sealed (iv + ciphertext, hex). That yes/no is a padding oracle."
+    - "Classic CBC padding-oracle decryption. Work block by block, last byte first: tamper the previous block's bytes until the oracle says the padding is valid, which tells you the intermediate state, which gives you the plaintext byte. Search: 'cbc padding oracle attack explained', 'padding oracle decrypt script'."
+    - "Grab iv+ct from {LAB}/pro/sealed, split into 16-byte blocks, and for each ciphertext block run the standard oracle attack against {LAB}/pro/unseal?c=<hex>. Any padding-oracle script (padbuster-style, or ~40 lines of Python) recovers the note, which is the flag. It is thousands of requests ... script it and let it run."
+  2:
+    - "rsa.txt has n, e and c. The whole weakness is that the two primes are very close together, so n is just barely larger than a perfect square."
+    - "Fermat factorization. Start a = ceil(sqrt(n)); while a*a - n is not a perfect square, increment a; then p = a+b, q = a-b. With near-twin primes it finishes in a handful of steps. Then d = inverse(e, (p-1)(q-1)), m = pow(c,d,n), and long_to_bytes(m) is the flag. Search: 'fermat factorization rsa', 'rsa decrypt from p q python'."
+    - "Run:  a=isqrt(n)+1; while not is_square(a*a-n): a+=1; b=isqrt(a*a-n); p,q=a+b,a-b  then  d=pow(e,-1,(p-1)*(q-1)); from Crypto.Util.number import long_to_bytes; print(long_to_bytes(pow(c,d,n)))  ... that prints the flag."
+  3:
+    - "{LAB}/pro/badge?user=NAME returns AES-ECB of  user=NAME&role=guest  as hex. Same 16-byte plaintext block always gives the same ciphertext block ... that is the whole game. {LAB}/pro/enter?badge=HEX decrypts a badge and lets you in if it reads role=admin."
+    - "ECB cut-and-paste. Craft one NAME so that a full block of your controlled input is exactly  admin&role=admin  (padded correctly), and another request so the blocks line up as  user=...&role=  on a boundary. Then splice the 'admin' block in where 'guest' was. Search: 'ecb cut and paste attack role=admin', 'ecb block reordering forge'."
+    - "Block size 16. (1) user= is 5 chars, so pick a name length that pushes 'role=' to end exactly at a block boundary and note which block is the role value. (2) In a second request, position a block whose plaintext is  admin  + PKCS7 padding (0x0b * 11). Copy that ciphertext block over the guest-role block, send the spliced hex to {LAB}/pro/enter?badge=... ... it returns the flag. Script the block math."
+  4:
+    - "{LAB}/pro/token gives you an RS256 JWT with role=guest. {LAB}/pro/pubkey hands out the RSA PUBLIC key. {LAB}/pro/vip?token=... lets you in if the token says role=admin ... and it will verify a token signed with HS256, too."
+    - "Algorithm-confusion: the server verifies RS256 with the public key, but also accepts HS256 using that same public key bytes as the HMAC secret. So forge a token with alg=HS256, role=admin, and sign it with the PEM of the public key as the key. Search: 'jwt algorithm confusion rs256 hs256', 'jwt forge hs256 with public key'."
+    - "Fetch the PEM from {LAB}/pro/pubkey, then:  import jwt; pem=open('pub.pem','rb').read(); print(jwt.encode({'role':'admin'}, pem, algorithm='HS256'))  and send that to {LAB}/pro/vip?token=... ... admin returns the flag. (pyjwt may refuse an asymmetric key for HMAC; pass it as raw bytes, or use an older pyjwt / the `jwt` CLI.)"
+  5:
+    - "strings and a quick objdump will not hand you the serial ... the binary feeds your input through a small interpreter (a loop over an internal program/table) and compares the result to stored bytes. You have to understand the loop, not read a constant."
+    - "Reverse the check loop in Ghidra / objdump -d. It transforms each character of your 16-char serial with a fixed per-index operation and compares to a baked-in table. Work the operation backwards from the table to produce the exact serial. Search: 'keygenme reverse transform table', 'vm crackme reversing'."
+    - "The check is, per index i (0..15):  ((serial[i] ^ 0x3C) + i*5) & 0xFF  must equal TABLE[i]. Invert it:  serial[i] = ((TABLE[i] - i*5) & 0xFF) ^ 0x3C. Recover TABLE from the binary (objdump -s -j .rodata vault_vm), compute the 16 bytes, run  ./vault_vm <serial>  and it prints the flag."

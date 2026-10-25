@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block wrapclass %}narrow{% endblock %}
+{% block body %}
+<div class="hero">
+  <h1>CAPTURE THE <span class="mark">PEAK</span></h1>
+  <div class="sub">{{ subtitle }}</div>
+  <span class="tag">{{ tagline }}</span>
+</div>
+
+<div class="panel">
+  <div class="tabs">
+    <button id="tab-reg" class="on" onclick="pane('reg')">REGISTER</button>
+    <button id="tab-login" onclick="pane('login')">LOG IN</button>
+  </div>
+
+  <div id="pane-reg" class="pane on">
+    {% if not reg_open %}
+      <p class="muted" style="margin-top:16px">Registration is closed. Log in with your existing team.</p>
+    {% else %}
+    <form method="post" action="{{ url_for('register') }}">
+      <label>TEAM / CALLSIGN</label>
+      <input type="text" name="name" maxlength="40" value="{{ name or '' }}" placeholder="the name on the leaderboard" required autofocus>
+      <label>PASSPHRASE <span class="tiny">(share it with your team ... everyone uses this to get in)</span></label>
+      <input type="password" name="passphrase" placeholder="min 3 chars" required>
+      {% if require_key %}
+      <label>UNLOCK CODE <span class="tiny">(the marshal gives this only after you clear all 20)</span></label>
+      <input type="text" name="entry_key" placeholder="invitation code" required>
+      {% endif %}
+      <div class="row" style="margin-top:14px">
+        <div class="seg" id="soloseg">
+          <button type="button" class="on" onclick="setSolo(0,this)">GROUP</button>
+          <button type="button" onclick="setSolo(1,this)">SOLO</button>
+        </div>
+        <input type="hidden" name="mode_solo" id="mode_solo" value="0">
+        <button class="btn" type="submit" style="margin-left:auto">START THE CLIMB</button>
+      </div>
+      <p class="tiny" style="margin-top:12px">The event ends at 4 PM for everyone. Register when your team is ready to play.</p>
+      {% if err %}<div class="flash err show">{{ err }}</div>{% endif %}
+    </form>
+    {% endif %}
+  </div>
+
+  <div id="pane-login" class="pane">
+    <form method="post" action="{{ url_for('login') }}">
+      <label>TEAM / CALLSIGN</label>
+      <input type="text" name="name" maxlength="40" value="{{ name or '' }}" required>
+      <label>PASSPHRASE</label>
+      <input type="password" name="passphrase" required>
+      <button class="btn" type="submit" style="margin-top:14px">RESUME</button>
+      {% if login_err %}<div class="flash err show">{{ login_err }}</div>{% endif %}
+    </form>
+  </div>
+</div>
+
+<p class="tiny">Solo or a full group, same deal: one shared login per team. Lose nobody ... anyone on the team logs in with the same name + passphrase, on any device.</p>
+{% endblock %}
+{% block script %}
+<script>
+function pane(w){
+  document.getElementById('pane-reg').classList.toggle('on',w==='reg');
+  document.getElementById('pane-login').classList.toggle('on',w==='login');
+  document.getElementById('tab-reg').classList.toggle('on',w==='reg');
+  document.getElementById('tab-login').classList.toggle('on',w==='login');
+}
+function setSolo(v,btn){
+  document.getElementById('mode_solo').value=v;
+  [...document.querySelectorAll('#soloseg button')].forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+{% if login_err %}pane('login');{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+# ============================================================
+#  CAPTURE THE PEAK :: PRO TIER  -  FLAGS (builder-only)
+#  Five camps, each as hard as the main-event VAULT DOOR.
+#  Only reachable at the secret /onlyforpro entrance.
+# ============================================================
+salt: "ch4ng3_me_pr0_s4lt"
+
+flags:
+  1: "acqu1redP34k{padding_oracle_peeled_it}"
+  2: "acqu1redP34k{fermat_primes_too_close}"
+  3: "acqu1redP34k{ecb_blocks_rearranged}"
+  4: "acqu1redP34k{rs256_confused_for_hs256}"
+  5: "acqu1redP34k{the_vm_gave_up_its_serial}"

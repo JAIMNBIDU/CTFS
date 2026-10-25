@@ -1,0 +1,238 @@
+# ============================================================
+#  CAPTURE THE PEAK  -  STAGE PROMPTS  (SHIPPED, public-safe)
+# ============================================================
+#  Lore + task text shown in the portal. No flags/secrets here.
+#  `artifact` = file dropped into /ctf/stageNN/ (null = no file,
+#  challenge lives on the lab service or is OOB).
+#  `category` = one of: forensics_osint, stego, web, pwn, hashing
+#  `points`   = base score before hint penalties (100 default).
+# ============================================================
+
+title: "CAPTURE THE PEAK"
+subtitle: "Penetration . Exploitation . Analysis . Kryptography"
+tagline: "Twelve camps. One summit. Seven hours of air."
+
+# category display names + order on the board
+categories:
+  forensics_osint: "FORENSICS / OSINT"
+  stego:           "STEGANOGRAPHY"
+  web:             "WEB"
+  pwn:             "PWN"
+  crypto:          "CRYPTO"
+  hashing:         "HASHING"
+
+stages:
+  1:
+    name: "BASE CAMP"
+    category: forensics_osint
+    points: 100
+    brief: >
+      Every climb starts with a message left at base camp, wrapped so the
+      weather can't read it. It has been coated four times. Strip the
+      coats in the right order and read what the last team left you.
+    artifact: "basecamp.txt"
+    skills: ["base64", "hex", "rot13"]
+  2:
+    name: "THE WIRE"
+    category: forensics_osint
+    points: 100
+    brief: >
+      A radio capture from the ridge survived. Someone logged in over the
+      link and sent their secret in the clear. Don't read packets one by
+      one ... follow the whole conversation and read what crossed.
+    artifact: "ridge.pcap"
+    skills: ["tshark", "follow tcp stream"]
+  3:
+    name: "LOST & FOUND"
+    category: forensics_osint
+    points: 100
+    brief: >
+      A photo was dropped on the trail. The picture is nothing. What the
+      camera wrote into the file when it was taken is everything. Read the
+      file's memory ... the message it carries is dressed up, but it is all
+      there. Decode it and the word is yours.
+    artifact: "dropped.jpg"
+    skills: ["exiftool", "metadata", "osint"]
+  4:
+    name: "BENEATH THE SNOW"
+    category: stego
+    points: 100
+    brief: >
+      An image sits half-buried. Something is packed under its grain,
+      locked with a word. The word is not far ... another file at this camp
+      is whispering it, if you know how to read a file that pretends to be
+      empty.
+    artifact: "snowfield.jpg"
+    skills: ["steghide", "strings"]
+  5:
+    name: "WHITE NOISE"
+    category: stego
+    points: 100
+    brief: >
+      A clean, boring photo of the glacier. Too clean. The truth lives in
+      one colour channel's lowest bits, and the truth is a shape a machine
+      reads better than your eyes do. Split it. Scan it.
+    artifact: "glacier.png"
+    skills: ["imagemagick", "zbarimg", "lsb"]
+  6:
+    name: "THIN AIR"
+    category: web
+    points: 100
+    brief: >
+      The summit relay runs a little status site. It tells crawlers where
+      not to look, and it trusts whatever your browser claims to be. Find
+      the door it tries to hide, then walk through as someone you are not.
+    artifact: null
+    skills: ["robots.txt", "cookies", "idor"]
+  7:
+    name: "CREVASSE"
+    category: web
+    points: 100
+    brief: >
+      The relay's login form was bolted together in a hurry. It stitches
+      your input straight into the query that decides who you are. One
+      honest climber would knock. You are not going to knock.
+    artifact: null
+    skills: ["sql injection", "auth bypass"]
+  8:
+    name: "SWITCHBACK"
+    category: web
+    points: 100
+    brief: >
+      The relay has a log viewer that fetches whatever filename you hand
+      it, no questions asked. The trail doesn't only go up. Sometimes the
+      way to the top is a lot of steps backward.
+    artifact: null
+    skills: ["lfi", "path traversal"]
+  9:
+    name: "THE LADDER"
+    category: pwn
+    points: 100
+    brief: >
+      A diagnostics service on the relay pings whatever host you give it.
+      It builds the command by gluing your text onto the end. It never
+      stops to ask where your text ends and the command begins. Teach it.
+    artifact: null
+    skills: ["command injection", "curl"]
+  10:
+    name: "CORNICE"
+    category: pwn
+    points: 100
+    brief: >
+      A small gatekeeper binary guards the next camp. It wants one exact
+      pass-phrase and tells you nothing. It was built in a hurry, and
+      hurried binaries say more than they mean to. Make it talk.
+    artifact: "gatekeeper"
+    skills: ["strings", "ltrace", "reversing"]
+  11:
+    name: "THIN CRUST"
+    category: hashing
+    points: 100
+    brief: >
+      A dump of climber credentials was recovered from the relay. The
+      hashes are old, naked, and lazy. One of them opens the final ascent.
+      Crack it. The list of likely passwords is already in your pack.
+    artifact: "creds.txt"
+    skills: ["john", "hashcat", "wordlist"]
+  12:
+    name: "THE SUMMIT"
+    category: hashing
+    points: 100
+    brief: >
+      The summit beacon hands out signed tokens that say who you are. It
+      signs them with a secret too weak to deserve the name. Recover the
+      secret, forge a token that says you own the mountain, and present it.
+    artifact: "token.txt"
+    skills: ["jwt", "hashcat", "hmac"]
+  13:
+    name: "THE MIRROR WALL"
+    category: web
+    points: 100
+    brief: >
+      The relay runs a guest greeter that writes your name back to you. It
+      does not just print the name ... it hands it to its template engine and
+      lets it render. Give it something to render that it should have kept
+      to itself.
+    artifact: null
+    skills: ["ssti", "jinja2", "template injection"]
+  14:
+    name: "BEACON IN THE STORM"
+    category: forensics_osint
+    points: 100
+    brief: >
+      A capture off the relay's uplink is mostly ordinary name lookups. But
+      one machine keeps asking about a domain that never answers, one odd
+      label at a time. Those labels are not names. Line them up and read
+      what someone smuggled out.
+    artifact: "beacon.pcap"
+    skills: ["tshark", "dns", "hex"]
+  15:
+    name: "THE BURIED KEY"
+    category: stego
+    points: 100
+    brief: >
+      Another locked image, and this time the obvious note lies to you ...
+      the key is no longer written in any file beside it. The camera keeps
+      its own diary, though, and someone wrote the key into it. Read the
+      diary, then open the image.
+    artifact: "summit.jpg"
+    skills: ["exiftool", "steghide", "metadata"]
+  16:
+    name: "THE GLASS BOX"
+    category: pwn
+    points: 100
+    brief: >
+      The relay exposes a tiny Python expression evaluator with its hands
+      tied ... no built-ins, it says. The summit key sits in a file the
+      evaluator can reach but you are not allowed to name. Climb out of the
+      box from the inside and take it.
+    artifact: null
+    skills: ["python", "sandbox escape", "eval"]
+  17:
+    name: "SALTED ICE"
+    category: hashing
+    points: 100
+    brief: >
+      One more credential survived, and whoever stored it finally learned to
+      add salt. The salt sits right next to the hash. It does not make the
+      password strong ... it only makes you pick the right mode. Crack it and
+      wrap what falls out.
+    artifact: "shadow.txt"
+    skills: ["hashcat", "salt", "sha256"]
+  18:
+    name: "THE VAULT DOOR"
+    category: crypto
+    points: 150
+    brief: >
+      The relay has a vault that seals whatever you hand it ... and it always
+      tacks its own master word onto the end before it locks the box, in neat
+      fixed-size blocks, each block sealed the same way every time. It never
+      meant to tell you the master word. The way it seals is exactly how it
+      gives it away, one letter at a time. No wordlist will save you here;
+      you have to make the door leak.
+    artifact: null
+    skills: ["aes-ecb", "byte-at-a-time", "scripting"]
+  19:
+    name: "DEAD RECKONING"
+    category: pwn
+    points: 150
+    brief: >
+      A small gatekeeper, compiled clean this time. No password lies around
+      in plain sight ... it builds the one key it will accept, character by
+      character, from a rule baked into its own instructions. strings will
+      give you nothing. Read how it thinks, reproduce the key it expects, and
+      it opens.
+    artifact: "keygen"
+    skills: ["reversing", "objdump", "gdb"]
+  20:
+    name: "SILENT LEDGER"
+    category: web
+    points: 150
+    brief: >
+      The relay's record lookup only ever answers yes or no ... it never
+      prints what it found. But it asks its database your question verbatim,
+      and the master record is sitting in that same table. One yes/no at a
+      time, you can make it spell out a secret it will never show you
+      directly. Slow work. No shortcut.
+    artifact: null
+    skills: ["blind sqli", "boolean", "scripting"]

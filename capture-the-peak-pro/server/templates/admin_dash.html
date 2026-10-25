@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}MARSHAL :: DASH{% endblock %}
+{% block body %}
+<div class="row" style="justify-content:space-between">
+  <div><div class="kicker">MARSHAL &middot; {{ mode|upper }} MODE</div><h1>CONTROL ROOM</h1></div>
+  <div class="row">
+    <form method="post" action="{{ url_for('admin_freeze') }}" style="margin:0">
+      {% if frozen %}
+        <button class="btn pur" onclick="return confirm('Resume the event for everyone?')">RESUME EVENT</button>
+      {% else %}
+        <button class="btn" onclick="return confirm('FREEZE the whole event? All teams stop scoring immediately.')">■ FREEZE EVENT</button>
+      {% endif %}
+    </form>
+    <a href="{{ url_for('admin_logout') }}" class="btn ghost">LOG OUT</a>
+  </div>
+</div>
+
+{% if frozen %}<div class="flash err show">EVENT IS FROZEN. No team can submit until you resume.</div>{% endif %}
+{% set suspects = teams|selectattr('suspect')|list %}
+
+<div class="scorebar">
+  <div class="stat"><span class="v">{{ teams|length }}</span><span class="l">teams</span></div>
+  <div class="stat"><span class="v red">{{ teams[0].score if teams else 0 }}</span><span class="l">top score</span></div>
+  <div class="stat"><span class="v {% if suspects %}red{% endif %}">{{ suspects|length }}</span><span class="l">flagged</span></div>
+  <div class="stat"><span class="v pur" id="endclk" data-left="{{ ((end_epoch - now)|int) if end_epoch else 0 }}">{% if end_epoch %}--:--{% else %}&infin;{% endif %}</span><span class="l">time left</span></div>
+</div>
+
+{% if suspects or shared_ips %}
+<div class="panel red" style="margin-top:18px">
+  <div class="kicker" style="color:var(--red)">ANTI-CHEAT ALERTS</div>
+  {% for t in suspects %}
+    <p style="margin:8px 0 2px"><b>{{ t.name }}</b> &mdash; {{ t.flags|join(' &middot; ')|safe }}
+      {% if t.fast %}<br><span class="tiny">fast solves: {% for s,secs in t.fast %}camp {{ s }} in {{ secs }}s{% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}
+    </p>
+  {% endfor %}
+  {% for ip, names in shared_ips %}
+    <p style="margin:8px 0 2px" class="tiny">shared IP <code>{{ ip }}</code> &mdash; teams: {{ names|unique|join(', ') }}</p>
+  {% endfor %}
+  <p class="tiny" style="margin-top:8px">A "fast solve" is under {{ fast_secs }}s from opening a camp to flagging it. Shared IP = the same address seen for more than one team. Signals, not proof ... check, then pause or disqualify.</p>
+</div>
+{% endif %}
+
+<h3 style="margin-top:24px;font-size:13px;color:var(--dim)">TEAMS &amp; CONTROLS</h3>
+<table>
+  <thead><tr>
+    <th class="r">#</th><th>TEAM</th><th class="r">SCORE</th><th class="r">CAMPS</th>
+    <th>FLAGS</th><th>CONTROLS</th>
+  </tr></thead>
+  <tbody>
+  {% for t in teams %}
+    <tr {% if t.banned %}style="opacity:.45"{% elif t.suspect %}style="background:rgba(255,42,58,.07)"{% endif %}>
+      <td class="r rank {% if loop.index<=3 and not t.banned %}top{% endif %}">{{ loop.index }}</td>
+      <td>{{ t.name }}
+        {% if t.is_solo %}<span class="badge solo">SOLO</span>{% endif %}
+        {% if t.banned %}<span class="badge" style="border-color:var(--red-dim);color:var(--red)">DQ</span>{% endif %}
+        {% if t.paused %}<span class="badge" style="border-color:var(--amber);color:var(--amber)">PAUSED</span>{% endif %}
+        {% if t.suspect and not t.banned %}<span class="badge" style="border-color:var(--red);color:var(--red)">⚑</span>{% endif %}
+      </td>
+      <td class="r"><span class="score-n">{{ t.score }}</span></td>
+      <td class="r">{{ t.solves|length }} / {{ n_stages }}</td>
+      <td class="tiny" style="color:var(--red)">{{ t.flags|join(' &middot; ')|safe if t.flags else '&mdash;'|safe }}</td>
+      <td>
+        <div class="row" style="gap:6px">
+          <form method="post" action="{{ url_for('admin_pause', tid=t.id) }}" style="margin:0">
+            {% if t.paused %}
+              <button class="btn pur" style="padding:5px 10px;font-size:11px" onclick="return confirm('Un-pause {{ t.name }}?')">UNPAUSE</button>
+            {% else %}
+              <button class="btn ghost" style="padding:5px 10px;font-size:11px" onclick="return confirm('Pause {{ t.name }}? They stop scoring until you unpause ... stays on the board.')">PAUSE</button>
+            {% endif %}
+          </form>
+          <form method="post" action="{{ url_for('admin_ban', tid=t.id) }}" style="margin:0">
+            {% if t.banned %}
+              <button class="btn pur" style="padding:5px 10px;font-size:11px" onclick="return confirm('Reinstate {{ t.name }}?')">REINSTATE</button>
+            {% else %}
+              <button class="btn" style="padding:5px 10px;font-size:11px" onclick="return confirm('DISQUALIFY {{ t.name }}? They stop scoring and drop off the public board.')">DISQUALIFY</button>
+            {% endif %}
+          </form>
+        </div>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="tiny">PAUSE freezes a team's scoring but keeps them on the board (use while you check a cheat flag). DISQUALIFY stops scoring and hides them. FREEZE EVENT is the emergency stop for everyone.</p>
+
+<h3 style="margin-top:24px;font-size:13px;color:var(--dim)">PER-TEAM DETAIL</h3>
+<table>
+  <thead><tr><th>TEAM</th><th>SOLVED CAMPS</th><th>HINTS TAKEN</th></tr></thead>
+  <tbody>
+  {% for t in teams %}
+    <tr>
+      <td>{{ t.name }}</td>
+      <td class="tiny">{{ t.solves|join(', ') if t.solves else '&mdash;'|safe }}</td>
+      <td class="tiny">{% for s,tier in t.hints.items() %}c{{ s }}:h{{ tier }} {% else %}&mdash;{% endfor %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h3 style="margin-top:24px;font-size:13px;color:var(--dim)">EVENT LOG <span class="tiny">(latest 250)</span></h3>
+<table>
+  <thead><tr><th>TIME (UTC)</th><th>TEAM</th><th>KIND</th><th>DETAIL</th></tr></thead>
+  <tbody>
+  {% for e in events %}
+    <tr>
+      <td class="tiny">{{ e['ts'][11:19] }}</td>
+      <td class="tiny">{{ e['team'] or '&mdash;'|safe }}</td>
+      <td class="tiny" style="color:{% if e['kind']=='solve' %}var(--purple){% elif e['kind']=='bad_flag' %}var(--red){% elif e['kind']=='admin' %}var(--amber){% else %}var(--dim){% endif %}">{{ e['kind'] }}</td>
+      <td class="tiny">{{ e['detail'] or '' }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+{% block script %}<script>
+(function(){
+  var el=document.getElementById('endclk');
+  if(el){var left=parseInt(el.getAttribute('data-left')||'0',10);
+    if(left>0){function f(){var s=Math.max(0,left);var h=String(Math.floor(s/3600)).padStart(2,'0');var m=String(Math.floor((s%3600)/60)).padStart(2,'0');el.textContent=h+':'+m;left--;}f();setInterval(f,1000);}}
+})();
+setTimeout(()=>location.reload(),20000);
+</script>{% endblock %}

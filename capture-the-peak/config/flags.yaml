@@ -1,0 +1,38 @@
+# ============================================================
+#  CAPTURE THE PEAK  -  FLAG SOURCE OF TRUTH  (BUILDER-ONLY)
+# ============================================================
+#  Plaintext flags are consumed ONLY inside the Docker builder
+#  stage. They are NEVER copied into the final image. The final
+#  image ships only salted SHA-256 hashes of these.
+#
+#  Flag format: acqu1redP34k{snake_case_lesson}
+#
+#  You MAY edit these. If you do, nothing else needs changing:
+#  the builder re-derives hashes + re-seeds the lab.
+# ============================================================
+
+salt: "ch4ng3_me_p34k_s4lt"   # change per cohort for fresh hashes
+
+flags:
+  1:  "acqu1redP34k{peeled_to_the_core}"
+  2:  "acqu1redP34k{cleartext_on_the_wire}"
+  3:  "acqu1redP34k{the_mountain_remembers}"
+  4:  "acqu1redP34k{beneath_the_snow}"
+  5:  "acqu1redP34k{the_lowest_bit_speaks}"
+  6:  "acqu1redP34k{trust_no_cookie}"
+  7:  "acqu1redP34k{union_of_the_broken}"
+  8:  "acqu1redP34k{dot_dot_slash_to_the_top}"
+  9:  "acqu1redP34k{inject_the_climb}"
+  10: "acqu1redP34k{strings_tell_all}"
+  11: "acqu1redP34k{weak_and_unsalted}"
+  12: "acqu1redP34k{you_reached_the_peak}"
+  # ---- expansion camps (added for the tech-fest edition) ----
+  13: "acqu1redP34k{template_became_a_shell}"
+  14: "acqu1redP34k{the_tunnel_leaks_in_queries}"
+  15: "acqu1redP34k{the_key_rode_in_the_exif}"
+  16: "acqu1redP34k{broke_out_of_the_sandbox}"
+  17: "acqu1redP34k{salt_only_slows_you}"
+  # ---- hard tier (AI-resistant: live / reversing) ----
+  18: "acqu1redP34k{ecb_leaks_one_byte_at_a_time}"
+  19: "acqu1redP34k{you_reversed_the_keygen}"
+  20: "acqu1redP34k{blind_but_it_still_talks}"

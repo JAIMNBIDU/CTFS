@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block body %}
+<div class="scorebar">
+  <div class="stat"><span class="v red" id="sc-score">{{ vs.score }}</span><span class="l">score</span></div>
+  <div class="stat"><span class="v" id="sc-solves">{{ vs.solves }} / {{ N_STAGES }}</span><span class="l">camps taken</span></div>
+  <div class="stat"><span class="v pur" id="sc-clock">--:--:--</span><span class="l">time left</span></div>
+  <div class="stat"><span class="v" style="font-size:13px;color:var(--dim)">CATEGORY BOARD</span><span class="l">any order</span></div>
+</div>
+{% if vs.banned %}<div class="flash err show">Your team has been disqualified by the marshals. Scoring is closed for you.</div>
+{% elif vs.frozen %}<div class="flash err show">The event is frozen by the marshals. Hold tight ... submissions are paused.</div>
+{% elif vs.locked %}<div class="flash err show">Your clock has run out. The board is frozen and your score is final.</div>{% endif %}
+
+{% for key, label in CATEGORIES.items() %}
+  {% set cstages = vs.stages | selectattr('category','equalto',key) | list %}
+  <div class="cathead">
+    <h2>{{ label }}</h2><div class="bar"></div>
+    <span class="cnt">{{ cstages | selectattr('solved') | list | length }} / {{ cstages | length }}</span>
+  </div>
+  <div class="grid">
+    {% for s in cstages %}
+      {% set cls = 'solved' if s.solved else ('avail' if s.available else 'locked') %}
+      <a class="cell {{ cls }}" {% if s.available or s.solved %}href="{{ url_for('stage', n=s.n) }}"{% endif %}>
+        <span class="no">CAMP {{ '%02d' % s.n }}</span>
+        <span class="nm">{{ s.name }}</span>
+        <span class="meta">
+          {% if s.solved %}<span class="pts" style="color:var(--purple)">+{{ s.earned }}</span>
+          {% else %}<span class="pts">{{ s.worth_now }} pts</span>{% endif %}
+          {% if s.hint_tier and not s.solved %}<span class="tiny">h{{ s.hint_tier }}</span>{% endif %}
+        </span>
+      </a>
+    {% endfor %}
+  </div>
+{% endfor %}
+{% endblock %}
+{% block script %}<script>startClock(['sc-clock','clk']);</script>{% endblock %}

@@ -1,0 +1,70 @@
+# ============================================================
+#  CAPTURE THE PEAK :: PRO TIER  -  STAGE PROMPTS (shipped)
+# ============================================================
+title: "CAPTURE THE PEAK :: PRO"
+subtitle: "The final ascent . Invitation only"
+tagline: "Five camps above the summit. No shortcuts left."
+
+categories:
+  crypto: "CRYPTO"
+  web:    "WEB"
+  pwn:    "PWN"
+
+stages:
+  1:
+    name: "THE LEAKING SEAL"
+    category: crypto
+    points: 300
+    brief: >
+      The relay seals a note in CBC mode and hands you the sealed bytes. It
+      also runs a careless door that will tell you, for any sealed blob you
+      send, only one thing: whether the padding came out clean. That single
+      yes/no, asked enough times, is the whole note. Peel it.
+    artifact: null
+    skills: ["cbc padding oracle", "scripting"]
+  2:
+    name: "TOO CLOSE TO HOME"
+    category: crypto
+    points: 300
+    brief: >
+      An RSA public key and a secret it locked. Whoever generated the key was
+      in a hurry and picked two primes that sit far too near each other. A
+      modulus built from near-twins does not keep its secret for long. Take
+      it apart and read what it hid.
+    artifact: "rsa.txt"
+    skills: ["rsa", "fermat factorization"]
+  3:
+    name: "SHUFFLE THE BADGE"
+    category: crypto
+    points: 300
+    brief: >
+      The gate stamps badges as  user=NAME&role=guest  and seals each one in
+      neat fixed blocks, every block sealed the same way. It never shuffles
+      the blocks back when it reads a badge. Feed it the right names, collect
+      the right blocks, and reassemble a badge that reads admin ... without
+      ever knowing the key.
+    artifact: null
+    skills: ["aes-ecb", "cut and paste", "scripting"]
+  4:
+    name: "A KEY BY ANY NAME"
+    category: web
+    points: 300
+    brief: >
+      The VIP desk signs tokens with RSA and publishes its public key for
+      anyone to check them. But the desk is sloppy about HOW a token is
+      signed ... it will also accept one signed the symmetric way. A public
+      key is public. Sign your own token with it and walk in as admin.
+    artifact: null
+    skills: ["jwt", "alg confusion", "rs256/hs256"]
+  5:
+    name: "THE MACHINE THAT LIES"
+    category: pwn
+    points: 300
+    brief: >
+      One more gatekeeper, and this one doesn't check your key with plain
+      code ... it runs your input through a little machine of its own and
+      checks the result against a table buried in itself. strings tells you
+      nothing. Read how the machine thinks, run it backwards, and hand it the
+      one serial it will accept.
+    artifact: "vault_vm"
+    skills: ["reversing", "obfuscation", "objdump"]

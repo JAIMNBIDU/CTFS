@@ -1,0 +1,221 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CYBER ESCAPE ROOM // TERMINAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head><body>
+<div class="scan"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">CYBER<b>_</b>ESCAPE<b>_</b>ROOM</div>
+    <div class="nav">
+      <span id="teamtag" class="tag red"></span>
+      <a href="/leaderboard">Leaderboard</a>
+      <a href="#" id="logout">Logout</a>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="panel" style="flex:2">
+      <div class="row" style="align-items:center">
+        <div>
+          <div class="muted small">TIME REMAINING</div>
+          <div class="timer" id="timer">--:--</div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted small">STATUS</div>
+          <div id="statustag"></div>
+          <div class="muted small" style="margin-top:8px">SOLVED</div>
+          <div style="font-size:22px;font-weight:800" id="solvedcount">0 / 7</div>
+        </div>
+      </div>
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="panel" id="startpanel" style="flex:1;display:none">
+      <h3 style="color:var(--red)">// READY</h3>
+      <p class="muted small">Your clock has not started. The moment you press this, 2 hours begins and Stage 01 unlocks. Make sure your whole team is here.</p>
+      <button class="btn" id="startbtn">START MISSION</button>
+    </div>
+  </div>
+
+  <div id="stagebox"></div>
+
+  <div class="panel" id="teaminfo" style="display:none">
+    <div class="row">
+      <div><div class="muted small">YOUR CALLSIGN</div><div id="ti_name" style="font-weight:800"></div></div>
+      <div><div class="muted small">TEAM CODE (share to add members)</div><div id="ti_code" class="mono" style="font-weight:800;color:var(--cyan)"></div></div>
+      <div><div class="muted small">MODE</div><div id="ti_mode"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let lastStage=null, escapedShown=false;
+
+async function post(url,data){const fd=new FormData();for(const k in data)fd.append(k,data[k]);
+  const r=await fetch(url,{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}return{ok:r.ok,status:r.status,j};}
+async function get(url){const r=await fetch(url);if(r.status===401){location.href='/';return null;}let j={};try{j=await r.json();}catch(e){}return j;}
+
+function fmt(s){s=Math.max(0,s|0);const m=(s/60|0),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+
+function renderSteps(solved,total,cur){
+  let h='';for(let i=1;i<=total;i++){
+    let c='step';if(i<=solved)c+=' done';else if(i===cur)c+=' cur';
+    h+=`<div class="${c}" title="Stage ${i}"></div>`;}
+  $('steps').innerHTML=h;
+}
+function statusTag(st){
+  const map={active:['LIVE','ok'],ready:['READY','warn'],frozen:['FROZEN','red'],
+    time_up:['TIME UP','red'],escaped:['ESCAPED','ok']};
+  const [t,c]=map[st]||['--','red'];
+  return `<span class="tag ${c}">${t}</span>`;
+}
+
+function stageHTML(s){
+  if(s.escaped){
+    return `<div class="panel center" style="border-left-color:var(--ok)">
+      <h1 style="color:var(--ok)">// SYSTEM BREACHED</h1>
+      <p class="muted">You assembled the signal out of the noise and walked out. Your finish time is locked on the board.</p>
+      <div style="font-size:60px">▓▒░ OUT ░▒▓</div>
+      <a class="btn ok" href="/leaderboard" style="margin-top:14px">SEE THE BOARD</a></div>`;
+  }
+  if(s.final){
+    return `<div class="panel" style="border-left-color:var(--cyan)">
+      <span class="tag cyan">FINAL</span>
+      <h2 style="color:var(--cyan)">${s.title}</h2>
+      <p class="muted">${s.brief.replace(/\n/g,'<br>')}</p>
+      <label>MASTER PASSPHRASE</label>
+      <div class="row" style="align-items:flex-end">
+        <input id="finalinput" placeholder="word_word_word_word_word">
+        <button class="btn" id="finalbtn" style="flex:0 0 auto">ESCAPE</button>
+      </div>
+      <div id="submsg"></div></div>`;
+  }
+  let hints='';
+  (s.hints||[]).forEach((h,i)=>{hints+=`<div class="hint"><b>HINT ${i+1}:</b> ${h}</div>`;});
+  if(s.next_hint_in_min!=null)
+    hints+=`<div class="small muted">next hint unlocks in ~${s.next_hint_in_min} min on this stage</div>`;
+
+  let action='';
+  if(s.type==='physical'){
+    action=`<div class="msg info">PHYSICAL STAGE // location: <b>${s.location}</b></div>
+      <div class="muted small">YOUR COORDINATES (row,column) — read them off the grid posted there, in order:</div>
+      <div class="coords">${s.coords}</div>`;
+  }
+  if(s.endpoint==='/vault'){
+    action+=`<hr class="d"><h3 style="color:var(--red)">// THE VAULT</h3>
+      <div class="row"><input id="v_user" placeholder="username"><input id="v_pass" placeholder="password"></div>
+      <div style="margin-top:10px"><button class="btn" id="v_btn">AUTHENTICATE</button></div>
+      <div id="v_out"></div>`;
+  }
+  if(s.endpoint==='/sanctum'){
+    action+=`<hr class="d"><h3 style="color:var(--red)">// THE SANCTUM</h3>
+      <p class="muted small">Knock, and the guard checks your badge. Your badge is a cookie in your own browser.</p>
+      <div><button class="btn" id="sx_btn">KNOCK</button></div>
+      <div id="sx_out"></div>`;
+  }
+  let asset='';
+  if(s.has_asset){
+    asset=`<a class="btn ghost sm" href="/api/asset/${s.stage}" download>⬇ DOWNLOAD FILE</a>`;
+  }
+
+  return `<div class="panel">
+    <div class="row" style="align-items:center">
+      <div><span class="tag red">STAGE ${String(s.stage).padStart(2,'0')} / ${s.total}</span>
+        <span class="tag">${s.category}</span></div>
+      <div style="text-align:right">${asset}</div>
+    </div>
+    <h2>${s.title.replace(/^STAGE \d+ \/\/ /,'')}</h2>
+    <p class="muted" style="white-space:pre-line">${s.brief}</p>
+    ${action}
+    <hr class="d">
+    <label>SUBMIT FLAG</label>
+    <div class="row" style="align-items:flex-end">
+      <input id="flaginput" placeholder="CYBER_ESCAPE_ROOM{...}" spellcheck="false">
+      <button class="btn" id="submitbtn" style="flex:0 0 auto">SUBMIT</button>
+    </div>
+    <div id="submsg"></div>
+    ${hints}
+  </div>`;
+}
+
+function bind(){
+  const sb=$('submitbtn');
+  if(sb)sb.onclick=async()=>{
+    const flag=$('flaginput').value.trim();if(!flag)return;
+    sb.disabled=true;const {j}=await post('/api/submit',{flag});sb.disabled=false;
+    const el=$('submsg');
+    el.innerHTML=`<div class="msg ${j.ok?'ok':'err'}">${j.msg||''}</div>`;
+    if(j.ok){ $('flaginput').value=''; setTimeout(refresh,500); }
+  };
+  const fb=$('finalbtn');
+  if(fb)fb.onclick=async()=>{
+    const flag=$('finalinput').value.trim();if(!flag)return;
+    fb.disabled=true;const {j}=await post('/api/submit',{flag});fb.disabled=false;
+    $('submsg').innerHTML=`<div class="msg ${j.ok?'ok':'err'}">${j.msg||''}</div>`;
+    if(j.ok)setTimeout(refresh,700);
+  };
+  const vb=$('v_btn');
+  if(vb)vb.onclick=async()=>{
+    vb.disabled=true;
+    const {j}=await post('/api/vault',{username:$('v_user').value,password:$('v_pass').value});
+    vb.disabled=false;
+    let h=`<div class="msg ${j.ok?'ok':'err'}">${j.msg||''}</div>`;
+    if(j.query)h+=`<div class="small muted">query executed:</div><div class="msg" style="border-color:var(--cyan);color:var(--cyan);overflow:auto">${j.query.replace(/</g,'&lt;')}</div>`;
+    if(j.ok&&j.flag)h+=`<div class="msg ok">FLAG: <b>${j.flag}</b><br><span class="small">${j.note||''}</span></div>`;
+    $('v_out').innerHTML=h;
+  };
+  const sx=$('sx_btn');
+  if(sx)sx.onclick=async()=>{
+    sx.disabled=true;
+    const r=await fetch('/api/sanctum');let j={};try{j=await r.json();}catch(e){}
+    sx.disabled=false;
+    let h=`<div class="msg ${j.ok?'ok':'err'}">${j.msg||''}</div>`;
+    if(j.clearance)h+=`<div class="small muted">your badge (cookie 'clearance') currently reads: <b style="color:var(--warn)">${j.clearance}</b></div>`;
+    if(j.ok&&j.flag)h+=`<div class="msg ok">FLAG: <b>${j.flag}</b><br><span class="small">${j.note||''}</span></div>`;
+    $('sx_out').innerHTML=h;
+  };
+}
+
+async function refresh(){
+  const s=await get('/api/state'); if(!s)return;
+  $('teamtag').textContent=s.team;
+  $('ti_name').textContent=s.team; $('ti_code').textContent=s.code; $('ti_mode').textContent=s.mode.toUpperCase();
+  $('teaminfo').style.display='block';
+  $('statustag').innerHTML=statusTag(s.status);
+  $('solvedcount').textContent=`${s.solved} / ${s.total}`;
+  const cur=s.current.stage|| (s.current.final?s.total+1:s.total);
+  renderSteps(s.solved,s.total,s.current.stage||0);
+
+  // start panel
+  $('startpanel').style.display = s.started ? 'none':'block';
+
+  // timer
+  window._timeleft=s.time_left; window._running=(s.status==='active');
+  paintTimer();
+
+  // stage box (only re-render when the stage identity changes, to not wipe typed input)
+  const sig=JSON.stringify([s.current.stage,s.current.final,s.current.escaped,(s.current.hints||[]).length]);
+  if(sig!==lastStage){
+    $('stagebox').innerHTML=stageHTML(s.current);
+    $('stagebox').firstChild&&$('stagebox').firstChild.classList&&$('stagebox').firstChild.classList.add('flash');
+    bind();
+    lastStage=sig;
+  }
+}
+function paintTimer(){
+  const t=$('timer'); if(window._timeleft==null){t.textContent='--:--';return;}
+  t.textContent=fmt(window._timeleft);
+  t.classList.toggle('low',window._timeleft<=300);
+}
+// local countdown between server syncs
+setInterval(()=>{ if(window._running&&window._timeleft>0){window._timeleft--;paintTimer();} },1000);
+setInterval(refresh,4000);  // server sync every 4s
+
+$('startbtn').onclick=async()=>{ $('startbtn').disabled=true; await post('/api/start',{}); refresh(); };
+$('logout').onclick=async(e)=>{e.preventDefault();await post('/api/logout',{});location.href='/';};
+refresh();
+</script>
+</body></html>

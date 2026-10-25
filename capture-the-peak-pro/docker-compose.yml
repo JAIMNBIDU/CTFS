@@ -1,0 +1,44 @@
+# Capture the PEAK - two deployables from one image, same stages/scoring/theme.
+# Run ONE of them, or both at once (different ports). The only difference is
+# PEAK_MODE: the category board vs the linear ascent.
+#
+#   docker compose up -d peak-board      # category board  -> http://<host>:8000
+#   docker compose up -d peak-linear     # linear ascent   -> http://<host>:8100
+#
+# Set your host IP once so the in-browser terminal + relay links resolve on LAN.
+# (export PEAK_HOST=192.168.1.50  on Linux/macOS; $env:PEAK_HOST on PowerShell)
+
+services:
+  peak-board:
+    image: jaimnbidu/capture-the-peak:latest
+    build: .
+    environment:
+      PEAK_MODE: board
+      PEAK_ADMIN_PASS: change_me_peak_admin
+      PEAK_LAB_PORT: "9000"          # port teams use to reach the relay
+    ports:
+      - "8000:8000"   # portal
+      - "7681:7681"   # terminal
+      - "9000:9000"   # relay (lab)
+    restart: unless-stopped
+    volumes:
+      - peak_board_data:/var/peak
+
+  peak-linear:
+    image: jaimnbidu/capture-the-peak:latest
+    build: .
+    environment:
+      PEAK_MODE: linear
+      PEAK_ADMIN_PASS: change_me_peak_admin
+      PEAK_LAB_PORT: "9100"          # portal tells teams this port for the relay
+    ports:
+      - "8100:8000"   # portal
+      - "7781:7681"   # terminal
+      - "9100:9000"   # relay (lab)  host 9100 -> container 9000
+    restart: unless-stopped
+    volumes:
+      - peak_linear_data:/var/peak
+
+volumes:
+  peak_board_data:
+  peak_linear_data:

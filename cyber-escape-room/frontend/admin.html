@@ -1,0 +1,120 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CYBER ESCAPE ROOM // CONTROL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head><body>
+<div class="scan"></div>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">CYBER<b>_</b>ESCAPE<b>_</b>ROOM <span class="tag red">CONTROL</span></div>
+    <div class="nav"><a href="/leaderboard">Board</a><a href="#" id="gridbtn">Grid</a></div>
+  </div>
+
+  <div class="panel" id="loginpanel">
+    <h2 style="color:var(--red)">// ADMIN AUTH</h2>
+    <label>Control password</label>
+    <div class="row" style="align-items:flex-end">
+      <input id="pw" type="password" placeholder="••••••••">
+      <button class="btn" id="loginbtn" style="flex:0 0 auto">UNLOCK</button>
+    </div>
+    <div id="loginmsg"></div>
+  </div>
+
+  <div id="panel" style="display:none">
+    <div class="panel">
+      <div class="row" style="align-items:center">
+        <div>
+          <h2 style="margin:0">// OPERATIONS</h2>
+          <div class="muted small">event <b id="dur"></b> min base · extend step <b id="ext"></b> min · auto-refresh 3s · <span id="upd"></span></div>
+        </div>
+        <div style="text-align:right">
+          <button class="btn warn sm" id="extendall">+<span class="e">30</span>m TO ALL</button>
+        </div>
+      </div>
+    </div>
+    <div id="gridpanel" class="panel" style="display:none">
+      <h3 style="color:var(--red)">// PHYSICAL GRID (print this, post at BOTH locations)</h3>
+      <div id="grid"></div>
+      <p class="muted small">Same grid at both stations. Each team gets different coordinates, so they read different words. Keep the printed copy identical to this.</p>
+    </div>
+    <div class="panel">
+      <table>
+        <thead><tr><th>#</th><th>Team</th><th>Players</th><th>Stage</th><th>Solved</th><th>Time left</th><th>State</th><th>Phys words</th><th>Controls</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="empty" class="muted center" style="padding:24px;display:none">No teams yet.</div>
+    </div>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let authed=false;
+async function post(url,data){const fd=new FormData();for(const k in data)fd.append(k,data[k]);
+  const r=await fetch(url,{method:'POST',body:fd});let j={};try{j=await r.json();}catch(e){}return{ok:r.ok,status:r.status,j};}
+function fmt(s){s=Math.max(0,s|0);const m=(s/60|0),ss=s%60;return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');}
+function esc(s){return (s+'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+$('loginbtn').onclick=async()=>{
+  const {ok,j}=await post('/api/admin/login',{password:$('pw').value});
+  if(!ok){return $('loginmsg').innerHTML=`<div class="msg err">${j.detail||'denied'}</div>`;}
+  authed=true;$('loginpanel').style.display='none';$('panel').style.display='block';load();
+};
+$('extendall').onclick=async()=>{ if(confirm('Add 30 min to EVERY team?')){await post('/api/admin/extend_all',{});load();} };
+$('gridbtn').onclick=(e)=>{e.preventDefault();const g=$('gridpanel');g.style.display=g.style.display==='none'?'block':'none';};
+
+async function act(url,team_id){await post(url,{team_id});load();}
+
+function stateTag(s){
+  const m={active:['LIVE','ok'],ready:['READY','warn'],frozen:['FROZEN','red'],time_up:['TIME UP','red'],escaped:['ESCAPED','ok']};
+  const [t,c]=m[s]||['--','red'];return `<span class="tag ${c}">${t}</span>`;
+}
+function ctrls(t){
+  const fz = t.frozen|| t.status==='frozen';
+  return `
+    ${fz?`<button class="btn ok sm" onclick="act('/api/admin/unfreeze',${t.id})">RESUME</button>`
+         :`<button class="btn sm" style="background:var(--red);color:#100" onclick="act('/api/admin/freeze',${t.id})">STOP</button>`}
+    <button class="btn warn sm" onclick="act('/api/admin/extend',${t.id})">+30m</button>
+    <button class="btn ghost sm" onclick="if(confirm('Skip ${esc(t.name)} past stage ${t.stage}?'))act('/api/admin/skip',${t.id})">SKIP</button>
+    <button class="btn ghost sm" onclick="if(confirm('FULL RESET of ${esc(t.name)}? Clears clock + progress.'))act('/api/admin/reset',${t.id})">RESET</button>`;
+}
+window.act=act;
+
+async function load(){
+  if(!authed)return;
+  const r=await fetch('/api/admin/teams'); if(r.status===401){authed=false;location.reload();return;}
+  const d=await r.json();
+  $('dur').textContent=d.duration_min;$('ext').textContent=d.extend_min;
+  document.querySelectorAll('.e').forEach(e=>e.textContent=d.extend_min);
+  $('upd').textContent=new Date(d.updated*1000).toLocaleTimeString();
+  $('empty').style.display=d.teams.length?'none':'block';
+  let h='';
+  for(const t of d.teams){
+    const extra=t.extra_sec?` <span class="tag warn">+${t.extra_sec/60|0}m</span>`:'';
+    const stageLbl = t.stage>t.total ? (t.escaped?'OUT':'FINAL') : t.stage;
+    h+=`<tr class="${t.frozen?'frozen':''}">
+      <td class="rank">${t.id}</td>
+      <td style="font-weight:700">${esc(t.name)}<br><span class="small muted">${t.code} · ${t.mode}</span></td>
+      <td class="small">${t.players.map(esc).join(', ')}</td>
+      <td style="font-weight:800">${stageLbl}</td>
+      <td>${t.solved}/${t.total}</td>
+      <td class="mono">${t.started?fmt(t.time_left):'--:--'}${extra}</td>
+      <td>${stateTag(t.status)}</td>
+      <td class="small muted">${t.phys1||'?'} / ${t.phys2||'?'}</td>
+      <td style="min-width:260px">${ctrls(t)}</td></tr>`;
+  }
+  $('rows').innerHTML=h;
+}
+async function loadGrid(){
+  const r=await fetch('/api/admin/grid');if(r.status!==200)return;const d=await r.json();
+  let h='<table class="gridtable" style="max-width:320px"><tr><th></th>';
+  for(let c=1;c<=6;c++)h+=`<th>${c}</th>`;h+='</tr>';
+  d.grid.forEach((row,i)=>{h+=`<tr><th>${i+1}</th>`;for(const ch of row)h+=`<td>${ch}</td>`;h+='</tr>';});
+  h+='</table>';$('grid').innerHTML=h;
+}
+setInterval(load,3000);
+// load grid once authed
+const _gi=setInterval(()=>{if(authed){loadGrid();clearInterval(_gi);}},500);
+</script>
+</body></html>

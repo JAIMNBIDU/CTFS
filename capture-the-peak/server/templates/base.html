@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ title }}{% endblock %}</title>
+<link rel="icon" href="{{ url_for('static', filename='img/sigil.svg') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body>
+<div class="nerves"></div>
+<div class="topbar">
+  <img class="sigil" src="{{ url_for('static', filename='img/sigil.svg') }}" alt="">
+  <span class="brand">CAPTURE THE <b>PEAK</b></span>
+  <nav class="nav">
+    {% if team %}
+      <a href="{{ url_for('play') }}">CLIMB</a>
+      <a href="{{ url_for('terminal') }}">TERMINAL</a>
+      {% if LB_PUBLIC %}<a href="{{ url_for('leaderboard') }}">LEADERBOARD</a>{% endif %}
+      <span class="who">{{ team['name'] }}</span>
+      <span class="clock" id="clock" data-left="{{ time_left|int }}"><b id="clk">--:--:--</b></span>
+    {% else %}
+      {% if LB_PUBLIC %}<a href="{{ url_for('leaderboard') }}">LEADERBOARD</a>{% endif %}
+      <a href="{{ url_for('landing') }}">ENTER</a>
+    {% endif %}
+  </nav>
+</div>
+<div class="wrap {% block wrapclass %}{% endblock %}">
+{% block body %}{% endblock %}
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block script %}{% endblock %}
+</body>
+</html>

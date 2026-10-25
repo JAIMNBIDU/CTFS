@@ -1,0 +1,28 @@
+# CYBER ESCAPE ROOM  ::  one command to run the whole thing.
+#
+#   docker compose up -d --build        # build + start  -> http://<host>/
+#   docker compose logs -f              # watch logs
+#   docker compose down                 # stop
+#
+# Change the two passwords before a real event.
+
+services:
+  cyber-escape-room:
+    image: jaimnbidu/cyber-escape-room:latest
+    build: .
+    container_name: cer
+    environment:
+      CER_ADMIN_PASSWORD: change_me_admin     # <- the /admin password
+      CER_SECRET: change_me_random            # <- any random string
+      CER_DURATION_MIN: "150"                 # base clock per team
+      CER_EXTEND_MIN: "30"                    # minutes per +30 press
+    ports:
+      - "8080:80"                             # host:container. students hit http://<IP>:8080/
+      # using 8080 because port 80 can get blocked by ISP / HTTPS-upgrade.
+      # if you want clean port-80 URLs instead, change this to "80:80".
+    restart: unless-stopped
+    volumes:
+      - cer_data:/data                        # cer.db survives restarts/reboots
+
+volumes:
+  cer_data:
