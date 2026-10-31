@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# =====================================================================
+#  CTF-00 : FIRST SHELL   //   Rungta Cyber Security Club
+#  Deploys the challenge playground into the current user's home dir.
+#  Run ONCE on the fresh Kali VM:   bash ctf_setup.sh
+#  No root needed for deploy. (The BOSS flag is built by the player.)
+# =====================================================================
+set -u
+BASE="$HOME/ctf-00"
+
+echo "[*] Deploying CTF-00: FIRST SHELL ..."
+rm -rf "$BASE"
+mkdir -p "$BASE"/intel "$BASE"/loot "$BASE"/logs "$BASE"/restricted
+
+# --- README / breadcrumb ------------------------------------------------
+cat > "$BASE/README" <<'EOF'
+OPERATOR BRIEFING
+-----------------
+You have a fresh box. Six flags are hidden in ~/ctf-00.
+Flag format:  RCSC{...}
+Everything you need is a terminal command. No GUI. No peeking at this script.
+Start by reading the briefing in the intel/ folder.
+EOF
+
+# --- CHECKPOINT 1 : first cat -------------------------------------------
+echo "RCSC{f1rst_c4t_g0t_th3_cr34m}" > "$BASE/intel/briefing.txt"
+
+# --- CHECKPOINT 2 : hidden dotfile --------------------------------------
+echo "RCSC{n0th1ng_h1d3s_fr0m_ls_-la}" > "$BASE/intel/.shadow_asset"
+
+# --- CHECKPOINT 3 : permission-locked file ------------------------------
+echo "RCSC{p3rm1ss10n_gr4nt3d}" > "$BASE/loot/vault.txt"
+chmod 000 "$BASE/loot/vault.txt"
+
+# --- CHECKPOINT 4 : needle in the logs ----------------------------------
+{
+  for i in $(seq 1 800); do
+    printf '%s kali systemd[1]: routine event id=%s state=ok\n' \
+      "$(date -d "-${i} min" '+%b %d %H:%M:%S' 2>/dev/null || date '+%b %d %H:%M:%S')" "$RANDOM"
+  done
+} > "$BASE/logs/auth.log"
+# bury the flag on a random line in the middle of the file
+INS=$(( (RANDOM % 600) + 80 ))
+sed -i "${INS}i Oct 31 03:13:37 kali sshd[1337]: session token RCSC{n33dl3_1n_th3_l0gs} accepted" "$BASE/logs/auth.log"
+
+# --- CHECKPOINT 6 : flag hiding in a running process --------------------
+# (6 before 5 on purpose: 5 is the BOSS, built by the player)
+# A loop is a compound command bash can't exec-optimise away, so bash
+# stays resident with the full arg string -- flag included -- in `ps aux`.
+pkill -f 'FIRST_SHELL_PROC' 2>/dev/null
+nohup bash -c 'while : ; do sleep 3600 ; done # FIRST_SHELL_PROC RCSC{c4ught_1n_th3_pr0c3ss}' >/dev/null 2>&1 &
+
+echo "[+] Done. Playground is at: $BASE"
+echo "[+] Tell players: cat ~/ctf-00/README"
