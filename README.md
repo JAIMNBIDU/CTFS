@@ -1,7 +1,5 @@
-# CTF
 
-Two self-hostable Capture The Flag events, built and run for a college TechFest,
-packaged here so you can clone, build, and play them locally on your own machine.
+CTF packaged here so you can clone, build, and play them locally on your own machine.
 Everything runs in Docker. No cloud, no public server, no account.
 
 
